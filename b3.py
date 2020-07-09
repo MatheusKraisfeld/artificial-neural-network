@@ -3,6 +3,22 @@ from tensorflow import keras
 
 class Layout:
     "Classe contendo o posicionamento de cada dado presente na serie historica da B3"
+    # Header
+    header = '00' # Tipo de registro header possui valor fixo iniciando com 00
+    posNomeDoArquivoHeader = [2, 15] # Fixo COTAHIST.AAAA
+    posCodigoDaOrigemHeader = [15, 23] # Fixo BOVESPA
+    posDataDaGeracaoHeader = [23, 31] # Formato AAAAMMDD
+    posReservaHeader = [31, 245] # Espaco preenchido com brancos
+
+    # Trailer 
+    trailer = '99' # Tipo de registro trailer possui valor fixo iniciando com 99
+    posNomeDoArquivoTrailer = [2, 15] # Fixo COTAHIST.AAAA
+    posCodigoDaOrigemTrailer = [15, 23] # Fixo BOVESPA
+    posDataDaGeracaoTrailer = [23, 31] # Formato AAAAMMDD
+    posTotalRegistros = [31, 42] # Total de registros incluindo header e trailer
+    posReservaTrailer = [42, 245] # Espaco preenchido com brancos
+
+    # Cotacoes historicas por papel-mercado
     posTIPREG = [0, 2] # Tipo de registro
     posDataPregao = [2, 10] # Data do pregao
     posCODBDI = [10, 12] # Codigo BDI
@@ -64,7 +80,7 @@ DISMES = []
 # http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/series-historicas/
 with open("../COTAHIST_A2020.txt") as file: 
     for line in file:
-        if line[0:2] != '00' and line[0:2] != '99':
+        if line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.header and line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.trailer:
             datasPregao.append(line[Layout.posDataPregao[0]:Layout.posDataPregao[1]])
             NOMRES.append(line[Layout.posNOMRES[0]:Layout.posNOMRES[1]])
             PREABE.append(line[Layout.posPREABE[0]:Layout.posPREABE[1]])
