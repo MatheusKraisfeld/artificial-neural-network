@@ -76,11 +76,13 @@ PTOEXE = []
 CODISI = []
 DISMES = []
 
-# arquivo txt contendo a série histórica disponível em:
+# arquivo txt contendo a serie historica disponivel em:
 # http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/series-historicas/
 with open("../COTAHIST_A2020.txt") as file: 
     for line in file:
+        # desconsidera header e trailer
         if line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.header and line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.trailer:
+            # para salvar qualquer outro dado da serie, basta seguir o modelo abaixo 
             datasPregao.append(line[Layout.posDataPregao[0]:Layout.posDataPregao[1]])
             NOMRES.append(line[Layout.posNOMRES[0]:Layout.posNOMRES[1]])
             PREABE.append(line[Layout.posPREABE[0]:Layout.posPREABE[1]])
