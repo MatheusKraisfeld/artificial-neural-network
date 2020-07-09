@@ -16,7 +16,9 @@ precosAbertura = []
 #posPrecoFechamento = [108, 121]
 precosFechamento = []
 
-with open("COTAHIST_A2020.txt") as file:
+# arquivo txt contendo a série histórica disponível em:
+# http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/series-historicas/
+with open("../COTAHIST_A2020.txt") as file: 
     for line in file:
         if line[0:2] != '00' and line[0:2] != '99':
             datasPregao.append(line[2:10])
