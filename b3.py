@@ -1,3 +1,6 @@
+import csv
+import numpy as np
+import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 
@@ -83,18 +86,23 @@ with open("../COTAHIST_A2020.txt") as file:
         # desconsidera header e trailer
         if line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.header and line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.trailer:
             # para salvar qualquer outro dado da serie, basta seguir o modelo abaixo 
-            datasPregao.append(line[Layout.posDataPregao[0]:Layout.posDataPregao[1]])
-            NOMRES.append(line[Layout.posNOMRES[0]:Layout.posNOMRES[1]])
-            PREABE.append(line[Layout.posPREABE[0]:Layout.posPREABE[1]])
-            PREULT.append(line[Layout.posPREULT[0]:Layout.posPREULT[1]])
+            if 'AAPL34 ' in line[Layout.posCODNEG[0]:Layout.posCODNEG[1]]:
+                datasPregao.append(line[Layout.posDataPregao[0]:Layout.posDataPregao[1]])
+                NOMRES.append(line[Layout.posNOMRES[0]:Layout.posNOMRES[1]])
+                PREABE.append(line[Layout.posPREABE[0]:Layout.posPREABE[1]])
+                PREULT.append(line[Layout.posPREULT[0]:Layout.posPREULT[1]])
+            
+with open('apple-stocks-2020.csv', 'w', newline='') as file:
+    fieldnames = ['data', 'preco de abertura', 'preco do ultimo negocio']
+    writer = csv.DictWriter(file, fieldnames=fieldnames)
 
-ativos = []
-ativos.append(datasPregao)
-ativos.append(NOMRES)
-ativos.append(PREABE)
-ativos.append(PREULT)
+    writer.writeheader()
+    for i in range(0, len(datasPregao)):
+        writer.writerow({'data': datasPregao[i], 'preco de abertura': PREABE[i], 'preco do ultimo negocio': PREULT[i]})
 
-print('Data do pregao: ', ativos[0][1])
-print('Nome resumido da empresa: ', ativos[1][1])
-print('Preco de abertura: ', ativos[2][1])
-print('Preco de fechamento: ', ativos[3][1])
+# Load CSV data into a dataframe
+dataframe = pd.read_csv('apple-stocks-2020.csv', index_col = 'data')
+# Add to predict column (adjusted close) and shift it. This is our output
+dataframe['output'] = dataframe.adjusted_close.shift(-1)
+# Remove NaN on the final sample (because we don't have tomorrow's output)
+dataframe = dataframe.dropna()
