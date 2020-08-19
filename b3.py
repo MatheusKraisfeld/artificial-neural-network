@@ -87,95 +87,114 @@ PTOEXE = []
 CODISI = []
 DISMES = []
 
-# arquivo txt contendo a serie historica disponivel em:
-# http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/series-historicas/
-with open("../COTAHIST_A2020.txt") as file: 
-    for line in file:
-        # desconsidera header e trailer
-        if line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.header and line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.trailer:
-            # para salvar qualquer outro dado da serie, basta seguir o modelo abaixo 
-            if 'AAPL34 ' in line[Layout.posCODNEG[0]:Layout.posCODNEG[1]]:
-                datasPregao.append(line[Layout.posDataPregao[0]:Layout.posDataPregao[1]])
-                NOMRES.append(line[Layout.posNOMRES[0]:Layout.posNOMRES[1]])
-                PREABE.append(line[Layout.posPREABE[0]:Layout.posPREABE[1]])
-                PREULT.append(line[Layout.posPREULT[0]:Layout.posPREULT[1]])
-            
-with open('apple-stocks-2020.csv', 'w', newline='') as file:
-    fieldnames = ['data', 'preco_abertura', 'preco_fechamento']
-    writer = csv.DictWriter(file, fieldnames=fieldnames)
+flag = 2
+while True:
+    stock = input('Digite o nome do ativo que deseja analisar: ')
+    year = input('Digite o ano da base de dados que deseja analisar: ')
 
-    writer.writeheader()
-    for i in range(0, len(datasPregao)):
-        writer.writerow({'data': datasPregao[i], 'preco_abertura': PREABE[i], 'preco_fechamento': PREULT[i]})
+    # arquivo txt contendo a serie historica disponivel em:
+    # http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/series-historicas/
+    with open('../COTAHIST_A' + year + '.txt') as file: 
+        for line in file:
+            # desconsidera header e trailer
+            if line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.header and line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.trailer:
+                # para salvar qualquer outro dado da serie, basta seguir o modelo abaixo 
+                if stock+' ' in line[Layout.posCODNEG[0]:Layout.posCODNEG[1]]:
+                    datasPregao.append(line[Layout.posDataPregao[0]:Layout.posDataPregao[1]])
+                    NOMRES.append(line[Layout.posNOMRES[0]:Layout.posNOMRES[1]])
+                    PREABE.append(line[Layout.posPREABE[0]:Layout.posPREABE[1]])
+                    PREULT.append(line[Layout.posPREULT[0]:Layout.posPREULT[1]])
+                    VOLTOT.append(line[Layout.posVOLTOT[0]:Layout.posVOLTOT[1]])
+                    PREMAX.append(line[Layout.posPREMAX[0]:Layout.posPREMAX[1]])
+                    PREMIN.append(line[Layout.posPREMIN[0]:Layout.posPREMIN[1]])
 
-# Load CSV data into a dataframe
-dataframe = pd.read_csv('apple-stocks-2020.csv', index_col = 'data')
-# Add to predict column (adjusted close) and shift it. This is our output
-dataframe['output'] = dataframe.preco_fechamento.shift(-1)
-# Remove NaN on the final sample (because we don't have tomorrow's output)
-dataframe = dataframe.dropna()
+    with open(stock + '-stocks-' + year + '.csv', 'w', newline='') as file:
+        fieldnames = ['data', 'preco_abertura', 'preco_fechamento', 'volume_total', 'preco_minimo', 'preco_maximo']
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
 
-scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1))
-rescaled = scaler.fit_transform(dataframe.values)
+        writer.writeheader()
+        for i in range(0, len(datasPregao)):
+            writer.writerow({
+                'data': datasPregao[i], 
+                'preco_abertura': PREABE[i], 
+                'preco_fechamento': PREULT[i], 
+                'volume_total': VOLTOT[i],
+                'preco_minimo': PREMIN[i],
+                'preco_maximo': PREMAX[i]
+                })
 
-# Split into training/testing
-training_ratio = 0.8
-training_testing_index = int(len(rescaled) * training_ratio)
-training_data = rescaled[:training_testing_index]
-testing_data = rescaled[training_testing_index:]
-training_length = len(training_data)
-testing_length = len(testing_data)
+    # Load CSV data into a dataframe
+    dataframe = pd.read_csv(stock + '-stocks-' + year + '.csv', index_col = 'data')
+    # Add to predict column (adjusted close) and shift it. This is our output
+    dataframe['output'] = dataframe.preco_fechamento.shift(-1)
+    # Remove NaN on the final sample (because we don't have tomorrow's output)
+    dataframe = dataframe.dropna()
 
-# Split training into input/output. Output is the one we added to the end
-training_input_data = training_data[:, 0:-1]
-training_output_data = training_data[:, -1]
+    # Rescale the input values between -1 and 1
+    scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1))
+    rescaled = scaler.fit_transform(dataframe.values)
 
-# Split testing into input/output. Output is the one we added to the end
-testing_input_data = testing_data[:, 0:-1]
-testing_output_data = testing_data[:, -1]
+    # Split into training/testing
+    training_ratio = 0.8 # training = 80% / testing = 20%
+    training_testing_index = int(len(rescaled) * training_ratio)
+    training_data = rescaled[:training_testing_index] # first element ~ training_testing_index
+    testing_data = rescaled[training_testing_index:] # training_testing_index ~ last element
 
-# Reshape data for (Sample, Timesteps, Features)
-training_input_data = training_input_data.reshape(training_input_data.shape[0], 1, training_input_data.shape[1])
-testing_input_data = testing_input_data.reshape(testing_input_data.shape[0], 1, testing_input_data.shape[1])
+    # Split training into input/output. Output is the one we added to the end
+    training_input_data = training_data[:, 0:-1] 
+    training_output_data = training_data[:, -1]
 
-# Build the model
-model = Sequential()
-model.add(LSTM(100, input_shape = (training_input_data.shape[1], training_input_data.shape[2])))
-model.add(Dense(1))
-model.compile(optimizer = 'adam', loss='mse')
+    # Split testing into input/output. Output is the one we added to the end
+    testing_input_data = testing_data[:, 0:-1]
+    testing_output_data = testing_data[:, -1]
 
-# Fit model with history to check for overfitting
-history = model.fit(
-    training_input_data,
-    training_output_data,
-    epochs = 100,
-    validation_data=(testing_input_data, testing_output_data),
-    shuffle=False
-)
+    # Reshape data for (Sample, Timesteps, Features)
+    training_input_data = training_input_data.reshape(training_input_data.shape[0], 1, training_input_data.shape[1])
+    testing_input_data = testing_input_data.reshape(testing_input_data.shape[0], 1, testing_input_data.shape[1])
 
-pyplot.plot(history.history['loss'], label='Training Loss')
-pyplot.plot(history.history['val_loss'], label='Testing Loss')
-pyplot.legend()
-pyplot.show()
+    if flag == 2:
+        # Build the model
+        model = Sequential()
+        model.add(LSTM(50, input_shape = (training_input_data.shape[1], training_input_data.shape[2])))
+        model.add(Dense(1))
+        model.compile(optimizer = 'adam', loss='mse')
 
-raw_predictions = model.predict(testing_input_data)
+        # Fit model with history to check for overfitting
+        history = model.fit(
+            training_input_data,
+            training_output_data,
+            epochs = 200,
+            validation_data=(testing_input_data, testing_output_data),
+            shuffle=False
+        )
 
-# Reshape testing input data back to 2d
-testing_input_data = testing_input_data.reshape((testing_input_data.shape[0], testing_input_data.shape[2]))
-testing_output_data = testing_output_data.reshape((len(testing_output_data), 1))
+    pyplot.plot(history.history['loss'], label='Training Loss')
+    pyplot.plot(history.history['val_loss'], label='Testing Loss')
+    pyplot.legend()
+    pyplot.show()
 
-# Invert scaling for prediction data
-unscaled_predictions = concatenate((testing_input_data, raw_predictions), axis = 1)
-unscaled_predictions = scaler.inverse_transform(unscaled_predictions)
-unscaled_predictions = unscaled_predictions[:, -1]
+    raw_predictions = model.predict(testing_input_data)
 
-# Invert scaling for actual data
-unscaled_actual_data = concatenate((testing_input_data, testing_output_data), axis = 1)
-unscaled_actual_data = scaler.inverse_transform(unscaled_actual_data)
-unscaled_actual_data = unscaled_actual_data[:, -1]
+    # Reshape testing input data back to 2d
+    testing_input_data = testing_input_data.reshape((testing_input_data.shape[0], testing_input_data.shape[2]))
+    testing_output_data = testing_output_data.reshape((len(testing_output_data), 1))
 
-# Plot prediction vs actual
-pyplot.plot(unscaled_actual_data, label='Actual Adjusted Close')
-pyplot.plot(unscaled_predictions, label='Predicted Adjusted Close')
-pyplot.legend()
-pyplot.show()
+    # Invert scaling for prediction data
+    unscaled_predictions = concatenate((testing_input_data, raw_predictions), axis = 1)
+    unscaled_predictions = scaler.inverse_transform(unscaled_predictions)
+    unscaled_predictions = unscaled_predictions[:, -1]
+
+    # Invert scaling for actual data
+    unscaled_actual_data = concatenate((testing_input_data, testing_output_data), axis = 1)
+    unscaled_actual_data = scaler.inverse_transform(unscaled_actual_data)
+    unscaled_actual_data = unscaled_actual_data[:, -1]
+
+    # Plot prediction vs actual
+    pyplot.plot(unscaled_actual_data, label='Actual Adjusted Close')
+    pyplot.plot(unscaled_predictions, label='Predicted Adjusted Close')
+    pyplot.legend()
+    pyplot.show()
+
+    flag = int(input('1 - novo teste\n2 - encerrar\n'))
+    if(flag == 2):
+        break
