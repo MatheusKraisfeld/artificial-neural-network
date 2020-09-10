@@ -125,8 +125,8 @@ while True:
 
     # Load CSV data into a dataframe
     dataframe = pd.read_csv(stock + '-stocks-' + year + '.csv', index_col = 'data')
-    # Add to predict column (adjusted close) and shift it. This is our output
-    dataframe['output'] = dataframe.preco_fechamento.shift(-1)
+    # Add to predict column (closing price) and shift it. This is our output
+    dataframe['output'] = dataframe.preco_fechamento.rolling(3).mean()
     # Remove NaN on the final sample (because we don't have tomorrow's output)
     dataframe = dataframe.dropna()
 
@@ -168,32 +168,34 @@ while True:
             shuffle=False
         )
 
-    pyplot.plot(history.history['loss'], label='Training Loss')
-    pyplot.plot(history.history['val_loss'], label='Testing Loss')
-    pyplot.legend()
-    pyplot.show()
+        pyplot.plot(history.history['loss'], label='Training Loss')
+        pyplot.plot(history.history['val_loss'], label='Testing Loss')
+        pyplot.legend()
+        pyplot.show()
 
-    raw_predictions = model.predict(testing_input_data)
+    n = int(input('Digite o tamanho da janela a ser analisada: '))
 
-    # Reshape testing input data back to 2d
-    testing_input_data = testing_input_data.reshape((testing_input_data.shape[0], testing_input_data.shape[2]))
-    testing_output_data = testing_output_data.reshape((len(testing_output_data), 1))
-
-    # Invert scaling for prediction data
-    unscaled_predictions = concatenate((testing_input_data, raw_predictions), axis = 1)
-    unscaled_predictions = scaler.inverse_transform(unscaled_predictions)
-    unscaled_predictions = unscaled_predictions[:, -1]
-
-    # Invert scaling for actual data
-    unscaled_actual_data = concatenate((testing_input_data, testing_output_data), axis = 1)
-    unscaled_actual_data = scaler.inverse_transform(unscaled_actual_data)
-    unscaled_actual_data = unscaled_actual_data[:, -1]
-
-    # Plot prediction vs actual
-    pyplot.plot(unscaled_actual_data, label='Actual Adjusted Close')
-    pyplot.plot(unscaled_predictions, label='Predicted Adjusted Close')
-    pyplot.legend()
-    pyplot.show()
+    # Slice array of tests in data window of size n
+    for i in range(2, n+2):
+        entrada = testing_input_data[:i]
+        saida = testing_output_data[:i]
+        raw_predictions = model.predict(entrada)
+        # Reshape testing input data back to 2d
+        entrada = entrada.reshape((entrada.shape[0], entrada.shape[2]))
+        saida = saida.reshape((len(saida), 1))
+        # Invert scaling for prediction data
+        unscaled_predictions = concatenate((entrada, raw_predictions), axis = 1)
+        unscaled_predictions = scaler.inverse_transform(unscaled_predictions)
+        unscaled_predictions = unscaled_predictions[:, -1]
+        # Invert scaling for actual data
+        unscaled_actual_data = concatenate((entrada, saida), axis = 1)
+        unscaled_actual_data = scaler.inverse_transform(unscaled_actual_data)
+        unscaled_actual_data = unscaled_actual_data[:, -1]
+        # Plot prediction vs actual
+        pyplot.plot(unscaled_actual_data, label='Actual Closing Price')
+        pyplot.plot(unscaled_predictions, label='Predicted Closing Price')
+        pyplot.legend()
+        pyplot.show()
 
     flag = int(input('1 - novo teste\n2 - encerrar\n'))
     if(flag == 2):
