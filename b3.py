@@ -174,28 +174,31 @@ while True:
         pyplot.show()
 
     n = int(input('Digite o tamanho da janela a ser analisada: '))
-
-    # Slice array of tests in data window of size n
-    for i in range(2, n+2):
-        entrada = testing_input_data[:i]
-        saida = testing_output_data[:i]
-        raw_predictions = model.predict(entrada)
-        # Reshape testing input data back to 2d
-        entrada = entrada.reshape((entrada.shape[0], entrada.shape[2]))
-        saida = saida.reshape((len(saida), 1))
-        # Invert scaling for prediction data
-        unscaled_predictions = concatenate((entrada, raw_predictions), axis = 1)
-        unscaled_predictions = scaler.inverse_transform(unscaled_predictions)
-        unscaled_predictions = unscaled_predictions[:, -1]
-        # Invert scaling for actual data
-        unscaled_actual_data = concatenate((entrada, saida), axis = 1)
-        unscaled_actual_data = scaler.inverse_transform(unscaled_actual_data)
-        unscaled_actual_data = unscaled_actual_data[:, -1]
-        # Plot prediction vs actual
-        pyplot.plot(unscaled_actual_data, label='Actual Closing Price')
-        pyplot.plot(unscaled_predictions, label='Predicted Closing Price')
-        pyplot.legend()
-        pyplot.show()
+    entrada = testing_input_data[:n]
+    saida = testing_output_data[:n]
+    for j in range(0, len(entrada)):
+        if j == 0:
+            raw_predictions = model.predict(entrada[:j+1])
+        else:
+            entrada[j][:,1] = raw_predictions[j-1]
+            raw_predictions = np.append(raw_predictions, model.predict(entrada[j:j+1]), axis=0)
+        
+    # Reshape testing input data back to 2d
+    entrada = entrada.reshape((entrada.shape[0], entrada.shape[2]))
+    saida = saida.reshape((len(saida), 1))
+    # Invert scaling for prediction data
+    unscaled_predictions = concatenate((entrada, raw_predictions), axis = 1)
+    unscaled_predictions = scaler.inverse_transform(unscaled_predictions)
+    unscaled_predictions = unscaled_predictions[:, -1]
+    # Invert scaling for actual data
+    unscaled_actual_data = concatenate((entrada, saida), axis = 1)
+    unscaled_actual_data = scaler.inverse_transform(unscaled_actual_data)
+    unscaled_actual_data = unscaled_actual_data[:, -1]
+    # Plot prediction vs actual
+    pyplot.plot(unscaled_actual_data, label='Actual Closing Price')
+    pyplot.plot(unscaled_predictions, label='Predicted Closing Price')
+    pyplot.legend()
+    pyplot.show()
 
     flag = int(input('1 - novo teste\n2 - encerrar\n'))
     if(flag == 2):
