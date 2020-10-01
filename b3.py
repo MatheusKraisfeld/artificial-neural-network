@@ -9,11 +9,17 @@ from matplotlib import pyplot
 from tensorflow import keras
 from sklearn import preprocessing
 from keras.models import Sequential
-from keras.layers import LSTM, Dense, Dropout
+from keras.layers import LSTM, Dense, Dropout, Flatten
 from numpy import concatenate
 
 class Layout:
+    
     "Classe contendo o posicionamento de cada dado presente na serie historica da B3"
+    
+    # header 00
+    # trailer 99
+    # valor dos ativos 01
+
     # Header
     header = '00' # Tipo de registro header possui valor fixo iniciando com 00
     posNomeDoArquivoHeader = [2, 15] # Fixo COTAHIST.AAAA
@@ -57,41 +63,18 @@ class Layout:
     posCODISI = [230, 242] # Codigo do papel no sistema ISIN ou codigo interno do papel
     posDISMES = [242, 245] # Numero de distribuicao do papel
 
-# header 00
-# trailer 99
-# valor dos ativos 01
-
-datasPregao = []
-CODBDI = []
-CODNEG = []
-TPMERC = []
-NOMRES = []
-ESPECI = []
-PRAZOT = []
-MODREF = []
-PREABE = []
-PREMAX = []
-PREMIN = []
-PREMED = []
-PREULT = []
-PREOFC = []
-PREOFV = []
-TOTNEG = []
-QUATOT = []
-VOLTOT = []
-PREEXE = []
-INDOPC = []
-DATVEN = []
-FATCOT = []
-PTOEXE = []
-CODISI = []
-DISMES = []
-
 flag = 2
 while True:
     stock = input('Digite o nome do ativo que deseja analisar: ')
     year = input('Digite o ano da base de dados que deseja analisar: ')
 
+    datasPregao = []
+    NOMRES = []
+    PREABE = []
+    PREULT = []
+    VOLTOT = []
+    PREMAX = []
+    PREMIN = []
     # arquivo txt contendo a serie historica disponivel em:
     # http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/series-historicas/
     with open('../COTAHIST_A' + year + '.txt') as file: 
@@ -126,9 +109,11 @@ while True:
     # Load CSV data into a dataframe
     dataframe = pd.read_csv(stock + '-stocks-' + year + '.csv', index_col = 'data')
     # Add to predict column (closing price) and shift it. This is our output
-    dataframe['output'] = dataframe.preco_fechamento.rolling(3).mean()
+    #dataframe['output'] = dataframe.preco_fechamento.rolling(10).mean()
+    dataframe['output'] = dataframe.preco_fechamento.shift(-1)
     # Remove NaN on the final sample (because we don't have tomorrow's output)
     dataframe = dataframe.dropna()
+    #dataframe = split(dataframe)
 
     # Rescale the input values between -1 and 1
     scaler = preprocessing.MinMaxScaler(feature_range=(-1, 1))
@@ -155,7 +140,9 @@ while True:
     if flag == 2:
         # Build the model
         model = Sequential()
-        model.add(LSTM(50, input_shape = (training_input_data.shape[1], training_input_data.shape[2])))
+        #model.add(LSTM(50, input_shape = (training_input_data.shape[1], training_input_data.shape[2])))
+        model.add(Flatten(input_shape = (training_input_data.shape[1], training_input_data.shape[2])))
+        model.add(Dense(15, activation='relu', input_dim=5))
         model.add(Dense(1))
         model.compile(optimizer = 'adam', loss='mse')
 
@@ -163,7 +150,7 @@ while True:
         history = model.fit(
             training_input_data,
             training_output_data,
-            epochs = 200,
+            epochs = 100,
             validation_data=(testing_input_data, testing_output_data),
             shuffle=False
         )
@@ -173,16 +160,18 @@ while True:
         pyplot.legend()
         pyplot.show()
 
-    n = int(input('Digite o tamanho da janela a ser analisada: '))
-    entrada = testing_input_data[:n]
-    saida = testing_output_data[:n]
-    for j in range(0, len(entrada)):
-        if j == 0:
-            raw_predictions = model.predict(entrada[:j+1])
-        else:
-            entrada[j][:,1] = raw_predictions[j-1]
-            raw_predictions = np.append(raw_predictions, model.predict(entrada[j:j+1]), axis=0)
-        
+    #n = int(input('Digite o tamanho da janela a ser analisada: '))
+    #n = len(testing_input_data)
+    entrada = testing_input_data[:]
+    saida = testing_output_data[:]
+    raw_predictions = model.predict(entrada[:])
+    #for j in range(0, len(entrada)):
+    #    if j == 0:
+    #        raw_predictions = model.predict(entrada[:j+1])
+    #    else:
+    #        entrada[j][:,1] = raw_predictions[j-1]
+    #        raw_predictions = np.append(raw_predictions, model.predict(entrada[j:j+1]), axis=0)
+    # 
     # Reshape testing input data back to 2d
     entrada = entrada.reshape((entrada.shape[0], entrada.shape[2]))
     saida = saida.reshape((len(saida), 1))
@@ -203,3 +192,8 @@ while True:
     flag = int(input('1 - novo teste\n2 - encerrar\n'))
     if(flag == 2):
         break
+
+
+def split(df, chunkSize = 3):
+    numberChunks = len(df) // chunkSize + 1
+    return np.array_split(df, numberChunks, axis=0)
