@@ -209,7 +209,6 @@ def splitByRow(df):
     splits = [df.loc[[i]] for i in df.index]
     return splits
 
-# 
 def create_model():
     '''
     model = tf.keras.models.Sequential([
@@ -223,9 +222,9 @@ def create_model():
                 metrics=[tf.metrics.SparseCategoricalAccuracy()])
     '''
     model = Sequential()
-        #model.add(LSTM(50, input_shape = (training_input_data.shape[1], training_input_data.shape[2])))
-        model.add(Flatten(input_shape = (training_input_data.shape[1], training_input_data.shape[2])))
-        model.add(Dense(15, activation='relu', input_dim=5))
-        model.add(Dense(1))
-        model.compile(optimizer = 'adam', loss='mse')
+    #model.add(LSTM(50, input_shape = (training_input_data.shape[1], training_input_data.shape[2])))
+    model.add(Flatten(input_shape = (training_input_data.shape[1], training_input_data.shape[2])))
+    model.add(Dense(15, activation='relu', input_dim=5))
+    model.add(Dense(1))
+    model.compile(optimizer = 'adam', loss='mse')
     return model
