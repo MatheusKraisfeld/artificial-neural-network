@@ -201,4 +201,11 @@ def split(df, chunkSize = 3):
 # Split with list comprehension
 def otherSplit(df):
     n = 200000  #chunk row size
-    list_df = [df[i:i+n] for i in range(0,df.shape[0],n)]
+    list_df = [df[i:i+n] for i in range(0,df.shape[0],n)]]
+    return list_df
+    
+# Split dataframe by row 
+def splitByRow(df):
+    splits = [df.loc[[i]] for i in df.index]
+    return splits
+
