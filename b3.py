@@ -197,3 +197,8 @@ while True:
 def split(df, chunkSize = 3):
     numberChunks = len(df) // chunkSize + 1
     return np.array_split(df, numberChunks, axis=0)
+
+# Split with list comprehension
+def otherSplit(df):
+    n = 200000  #chunk row size
+    list_df = [df[i:i+n] for i in range(0,df.shape[0],n)]
