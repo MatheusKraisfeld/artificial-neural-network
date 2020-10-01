@@ -193,7 +193,7 @@ while True:
     if(flag == 2):
         break
 
-
+# Split dataframe into dataframes of size 3
 def split(df, chunkSize = 3):
     numberChunks = len(df) // chunkSize + 1
     return np.array_split(df, numberChunks, axis=0)

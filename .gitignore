@@ -127,3 +127,27 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+ABEV3-stocks-2018.csv
+ABEV3-stocks-2020.csv
+BBDC3-stocks-2018.csv
+BIDI3-stocks-2018.csv
+BIDI3-stocks-2019.csv
+BIDI3-stocks-2020.csv
+BIDI2019-stocks-2019.csv
+CMIG3-stocks-2015.csv
+CMIG3-stocks-2016.csv
+CMIG3-stocks-2017.csv
+CMIG3-stocks-2018.csv
+CMIG3-stocks-2019.csv
+CMIG3-stocks-2020.csv
+CSMG3-stocks-2018.csv
+ELET3-stocks-2018.csv
+EMBR3-stocks-2018.csv
+PETR3-stocks-2015.csv
+PETR3-stocks-2016.csv
+PETR3-stocks-2017.csv
+PETR3-stocks-2018.csv
+PETR3-stocks-2019.csv
+PETR3-stocks-2020.csv
+PETR4-stocks-2020.csv
+petrobras-stocks-2020.csv
