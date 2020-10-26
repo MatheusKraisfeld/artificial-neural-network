@@ -84,7 +84,7 @@ def splitByRow(df):
 def create_model(shapeX, shapeY):
     model = Sequential()
     model.add(Flatten(input_shape = (shapeX, shapeY)))
-    model.add(Dense(20, activation='relu', input_dim=5))
+    model.add(Dense(20, activation='relu', input_dim=2))
     model.add(Dense(1))
     model.compile(optimizer = 'adam', loss='mse')
     return model
@@ -106,24 +106,24 @@ def main():
         VOLTOT = []
         PREMAX = []
         PREMIN = []
-        # arquivo txt contendo a serie historica disponivel em:
+        # Txt file containing a time series available at:
         # http://www.b3.com.br/pt_br/market-data-e-indices/servicos-de-dados/market-data/historico/mercado-a-vista/series-historicas/
         with open('../COTAHIST_A' + year + '.txt') as file: 
             for line in file:
-                # desconsidera header e trailer
+                # Skip header and trailer
                 if line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.header and line[Layout.posTIPREG[0]:Layout.posTIPREG[1]] != Layout.trailer:
-                    # para salvar qualquer outro dado da serie, basta seguir o modelo abaixo 
                     if stock+' ' in line[Layout.posCODNEG[0]:Layout.posCODNEG[1]]:
                         datasPregao.append(line[Layout.posDataPregao[0]:Layout.posDataPregao[1]])
-                        NOMRES.append(line[Layout.posNOMRES[0]:Layout.posNOMRES[1]])
+                        #NOMRES.append(line[Layout.posNOMRES[0]:Layout.posNOMRES[1]])
                         PREABE.append(line[Layout.posPREABE[0]:Layout.posPREABE[1]])
                         PREULT.append(line[Layout.posPREULT[0]:Layout.posPREULT[1]])
-                        VOLTOT.append(line[Layout.posVOLTOT[0]:Layout.posVOLTOT[1]])
-                        PREMAX.append(line[Layout.posPREMAX[0]:Layout.posPREMAX[1]])
-                        PREMIN.append(line[Layout.posPREMIN[0]:Layout.posPREMIN[1]])
+                        #VOLTOT.append(line[Layout.posVOLTOT[0]:Layout.posVOLTOT[1]])
+                        #PREMAX.append(line[Layout.posPREMAX[0]:Layout.posPREMAX[1]])
+                        #PREMIN.append(line[Layout.posPREMIN[0]:Layout.posPREMIN[1]])
 
         with open(stock + '-stocks-' + year + '.csv', 'w', newline='') as file:
-            fieldnames = ['data', 'preco_abertura', 'preco_fechamento', 'volume_total', 'preco_minimo', 'preco_maximo']
+            #fieldnames = ['data', 'preco_abertura', 'preco_fechamento', 'volume_total', 'preco_minimo', 'preco_maximo']
+            fieldnames = ['data', 'preco_abertura', 'preco_fechamento']
             writer = csv.DictWriter(file, fieldnames=fieldnames)
 
             writer.writeheader()
@@ -132,9 +132,9 @@ def main():
                     'data': datasPregao[i], 
                     'preco_abertura': PREABE[i], 
                     'preco_fechamento': PREULT[i], 
-                    'volume_total': VOLTOT[i],
-                    'preco_minimo': PREMIN[i],
-                    'preco_maximo': PREMAX[i]
+                    #'volume_total': VOLTOT[i],
+                    #'preco_minimo': PREMIN[i],
+                    #'preco_maximo': PREMAX[i]
                     })
 
         # Load CSV data into a dataframe
@@ -190,18 +190,26 @@ def main():
             pyplot.title(stock+' '+year+' '+numEpochs+' epochs')
             pyplot.legend()
             #pyplot.show()
-            pyplot.savefig('./Figures/'+stock+'/'+numEpochs+'-epochs.png')'''
-            
-        entrada = testing_input_data[:]
-        saida = testing_output_data[:]
-        raw_predictions = model.predict(entrada[:])
-        #for j in range(0, len(entrada)):
-        #    if j == 0:
-        #        raw_predictions = model.predict(entrada[:j+1])
-        #    else:
-        #        entrada[j][:,1] = raw_predictions[j-1]
-        #        raw_predictions = np.append(raw_predictions, model.predict(entrada[j:j+1]), axis=0)
-        # 
+            #pyplot.savefig('./Figures/'+stock+'/'+numEpochs+'-epochs.png')'''
+
+        n = int(sys.argv[4]) 
+        entrada = testing_input_data[:n]
+        saida = testing_output_data[:n]
+        #raw_predictions = model.predict(entrada[:])
+        for j in range(0, len(entrada)):
+            if j == 0:
+                raw_predictions = model.predict(entrada[:j+1])
+            else:
+                #print('Entrada[:j+1]: ', entrada[:j+1])
+                #print('Entrada[:j+1][:,0]: ', entrada[:j+1][:,0])
+                #entrada[j][:,0] = np.mean(entrada[:j+1][:,0])
+                #print('Entrada[:j+1]: ', entrada[:j+1])
+                #print('Entrada[:j+1][:,0]: ', entrada[:j+1][:,0])
+                #print('Entrada[j][:,1]: ', entrada[j][:,1])
+                #print('raw_predictions[j-1]', raw_predictions[j-1])
+                entrada[j][:,1] = raw_predictions[j-1]
+                raw_predictions = np.append(raw_predictions, model.predict(entrada[j:j+1]), axis=0)
+         
         # Reshape testing input data back to 2d
         entrada = entrada.reshape((entrada.shape[0], entrada.shape[2]))
         saida = saida.reshape((len(saida), 1))
@@ -225,7 +233,6 @@ def main():
         #pyplot.show()
         pyplot.savefig('./Figures/'+stock+'/'+numEpochs+'-epochs.png')
         
-
         #flag = int(input('1 - novo teste\n2 - encerrar\n'))
         flag = 2
         if(flag == 2):
